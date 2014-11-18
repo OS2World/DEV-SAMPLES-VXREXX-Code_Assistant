@@ -1,0 +1,11 @@
+VX-REXX OS/2 V2.13 Build B3
+VRX: B2x.VRX
+MacroPath: VRM:C:\VXREXX\Macros\VX-ASSIST\B2X
+EXEPath: 
+RunParameters: 
+RunDirectory: C:\VXREXX\Macros\VX-ASSIST\B2X
+VRXWindow: __VREMainWindow,1,15,181,5767,8000
+VRXWindow: __VRESectionListWindow,1,1054,2469,2650,3342
+VRXWindow: __VREToolsWindow,1,1144,6324,6511,1694
+UserFile: 1
+UserWindow: Window1,1

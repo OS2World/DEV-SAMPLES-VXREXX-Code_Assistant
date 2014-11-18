@@ -1,0 +1,279 @@
+/* Custom mainline for macro */
+
+    call RXFuncAdd "VRLoadFuncs", "VROBJ", "VRLoadFuncs"
+    call VRLoadFuncs
+
+    _VREVersion = SubWord( VRVersion( "VRObj" ), 1, 1 )
+    if( _VREVersion < 2.13 )then do
+        call VRMessage "", "This program requires VX-REXX version 2.1c to run.", "Error!"
+        return 32000
+    end
+
+
+    signal on SYNTAX name _VRESyntax
+    signal _VREMain
+
+_VRESyntax:
+    parse source . . _VRESourceSpec
+    call VRMessage "", "Syntax error in" _VRESourceSpec "line" SIGL":" ErrorText(rc), "Error!"
+    call VRFini
+    exit 32000
+
+_VREMain:
+/*:VRX         Main
+*/
+/*  Main
+*/
+Main:
+/*  Process the arguments.
+    Get the parent window.
+*/
+    parse source . calledAs .
+    parent = ""
+    argCount = arg()
+    argOff = 0
+    if( calledAs \= "COMMAND" )then do
+        if argCount >= 1 then do
+            parent = arg(1)
+            argCount = argCount - 1
+            argOff = 1
+        end
+    end; else do
+        call VROptions 'ImplicitNames'
+        call VROptions 'NoEchoQuit'
+    end
+    InitArgs.0 = argCount
+    if( argCount > 0 )then do i = 1 to argCount
+        InitArgs.i = arg( i + argOff )
+    end
+    drop calledAs argCount argOff
+
+/*  Load the windows
+*/
+    call VRInit
+    parse source . . spec
+    _VREPrimaryWindowPath = ,
+        VRParseFileName( spec, "dpn" ) || ".VRW"
+    _VREPrimaryWindow = ,
+        VRLoad( parent, _VREPrimaryWindowPath )
+    drop parent spec
+    if( _VREPrimaryWindow == "" )then do
+        call VRMessage "", "Cannot load window:" VRError(), ,
+            "Error!"
+        _VREReturnValue = 32000
+        signal _VRELeaveMain
+    end
+
+/*  Process events
+*/
+    call Init
+    signal on halt
+    do while( \ VRGet( _VREPrimaryWindow, "Shutdown" ) )
+        _VREEvent = VREvent()
+        interpret _VREEvent
+    end
+_VREHalt:
+    _VREReturnValue = Fini()
+    call VRDestroy _VREPrimaryWindow
+_VRELeaveMain:
+    call VRFini
+exit _VREReturnValue
+
+VRLoadSecondary:
+    __vrlsWait = abbrev( 'WAIT', translate(arg(2)), 1 )
+    if __vrlsWait then do
+        call VRFlush
+    end
+    __vrlsHWnd = VRLoad( VRWindow(), VRWindowPath(), arg(1) )
+    if __vrlsHWnd = '' then signal __vrlsDone
+    if __vrlsWait \= 1 then signal __vrlsDone
+    call VRSet __vrlsHWnd, 'WindowMode', 'Modal' 
+    __vrlsTmp = __vrlsWindows.0
+    if( DataType(__vrlsTmp) \= 'NUM' ) then do
+        __vrlsTmp = 1
+    end
+    else do
+        __vrlsTmp = __vrlsTmp + 1
+    end
+    __vrlsWindows.__vrlsTmp = VRWindow( __vrlsHWnd )
+    __vrlsWindows.0 = __vrlsTmp
+    do while( VRIsValidObject( VRWindow() ) = 1 )
+        __vrlsEvent = VREvent()
+        interpret __vrlsEvent
+    end
+    __vrlsTmp = __vrlsWindows.0
+    __vrlsWindows.0 = __vrlsTmp - 1
+    call VRWindow __vrlsWindows.__vrlsTmp 
+    __vrlsHWnd = ''
+__vrlsDone:
+return __vrlsHWnd
+
+/*:VRX         Fini
+*/
+Fini:
+    window = VRWindow()
+    call VRSet window, "Visible", 0
+    drop window
+return 0
+
+/*:VRX         Halt
+*/
+Halt:
+    signal _VREHalt
+return
+
+/*:VRX         Init
+*/
+Init:
+    window = VRWindow()
+    call VRMethod window, "CenterWindow"
+    call VRSet window, "Visible", 0
+    call VRMethod window, "Activate"
+    drop window
+return
+
+/*:VRX         Quit
+*/
+Quit:
+    window = VRWindow()
+    call VRSet window, "Shutdown", 1
+    drop window
+return
+
+/*:VRX         Window1_Close
+*/
+Window1_Close:
+
+    
+    call Quit
+return
+
+/*:VRX         Window1_Create
+*/
+Window1_Create: 
+
+/* Clear the Clipboard */
+rc = VRMethod("Application", "PutClipboard", "")
+
+win = ""
+win = VRMethod('Screen', 'FindWindow', 'Code Assistant', 'Desktop', 'descendents', 'exact', 'exact')
+if win == "" then
+Do
+
+        Buttons.1 = "OK"
+        Buttons.0 = 1
+        id = VRMessage( VRWindow(), "The Code Assistant program is not active", "Status", "Error", "Buttons.", 1, 1 )
+        call Quit
+
+
+End
+Else
+Do
+    dbpath = VRGetIni("Code Assistant", "DBPATH", "User")
+    hwndfile = dbpath || '\HWND.DAT'
+    epmfile = dbpath || '\EPM.DAT'
+
+    hwnd = VRGet( "Window1", "HWnd" )
+/*      
+    ok = VRCreateFile(hwndfile)
+    a = LineOut(hwndfile, hwnd)
+                
+    call LineOut(hwndfile) /* close it */
+*/
+    ok = VRCreateFile(epmfile)
+    a = LineOut(epmfile, hwnd)
+                
+    call LineOut(epmfile) /* close it */
+
+    
+    call VRMethod win, "Restore"
+    
+    call VRMethod win, "SetFocus" 
+End   
+
+
+
+   
+
+return
+
+/*:VRX         Window1_Resize
+*/
+Window1_Resize: 
+
+    cc = 1
+    rc = VRMethod("Application", "GetClipboard")
+    if rc = "" then
+        cc = 0
+
+            
+/* EPM Editor */
+    if rc <> 0 then /* insert text in EPM */
+        Do 
+          x = 0
+          spot = Pos('0d'x, rc)
+          if spot <> 0 then
+          Do
+                  Len = Length(rc)
+                  Value = ""
+                  do while spot > 1
+                        lfoffset = 1
+                        lf = Pos('0a'x,rc)
+                        if lf <> 0 then
+                        Do
+                            if lf = (spot + 1) then
+                            Do
+                                spot = spot + 1
+                                lfoffset = 2
+                            End
+                        End
+                        Value = Left(rc, (spot - lfoffset))
+                        diff = Len - spot  
+             /*           diff = Len - (spot + 1)  */
+                        rc = Right(rc, diff)
+                        Len = Length(rc)
+                        spot = Pos('0d'x, rc)
+                        x = x + 1
+                        if x > 50 then
+                            spot = 0
+
+                        call etkinserttext Value  
+                    end
+                    if Len > 1 then
+                    Do
+                        spot = Pos('0d'x,rc)
+                        if spot > 1 then
+                        Do
+                            lfoffset = 1
+                            lf = Pos('0a'x,rc)
+                            if lf <> 0 then
+                            Do
+                                if lf = (spot + 1) then
+                                Do
+                                    spot = spot + 1
+                                    lfoffset = 2
+                                End
+                            End
+                            Value = Left(rc, (spot - lfoffset))
+                            call etkinserttext Value 
+                        End
+
+                    End
+            End
+
+            Else
+            Do
+                if cc <> 0 then                
+                   call etkinserttext rc  
+            End
+                
+            
+                                                  
+        End
+
+   call Quit
+      
+
+
+return
+

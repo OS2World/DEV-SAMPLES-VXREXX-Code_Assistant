@@ -1,0 +1,6 @@
+/*
+*/
+"buildsubmenu default 1990 CodeAssistant        0 0"
+"buildmenuitem default 1990 1991 Assistant       0 0 rx C:\ASSIST\QUEUE.ERX"
+"buildmenuitem default 1990 1992 Librarian       0 0 rx C:\ASSIST\ASSTLIB.ERX"
+"showmenu default"

@@ -1,0 +1,11 @@
+VX-REXX OS/2 V2.13 Build B3
+VRX: random.VRX
+MacroPath: VRM:C:\VXREXX\Macros\CodeAssistant\REXX\Arithmetic\Random
+EXEPath: 
+RunParameters: 
+RunDirectory: C:\VXREXX\Macros\CodeAssistant\REXX\Arithmetic\Random
+VRXWindow: __VREMainWindow,1,888,903,5767,7995
+VRXWindow: __VRESectionListWindow,1,1927,3192,2650,3342
+VRXWindow: __VREToolsWindow,1,2018,6324,6514,1683
+UserFile: 1
+UserWindow: Window1,1

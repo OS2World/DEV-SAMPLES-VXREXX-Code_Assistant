@@ -1,0 +1,47 @@
+/* Custom mainline for macro */
+
+    call RXFuncAdd "VRLoadFuncs", "VROBJ", "VRLoadFuncs"
+    call VRLoadFuncs
+
+    _VREVersion = SubWord( VRVersion( "VRObj" ), 1, 1 )
+    if( _VREVersion < 2.13 )then do
+        call VRMessage "", "This program requires VX-REXX version 2.1c to run.", "Error!"
+        return 32000
+    end
+
+
+    signal on SYNTAX name _VRESyntax
+    signal _VREMain
+
+_VRESyntax:
+    parse source . . _VRESourceSpec
+    call VRMessage "", "Syntax error in" _VRESourceSpec "line" SIGL":" ErrorText(rc), "Error!"
+    exit 32000
+
+_VREMain:
+/*:VRX         Main
+*/
+Main:
+    signal on halt
+
+    call 'C:\ASSIST\QUEUELX.VRM'
+    text = ""
+
+    text = VRMethod("Application", "GetClipboard")
+    if text = 0 then
+        text = ""
+
+    if text <> "" then
+    Do
+        lxn clip paste
+        lxn set window activated
+    End
+
+exit
+
+/*:VRX         Halt
+*/
+Halt:
+
+exit
+
